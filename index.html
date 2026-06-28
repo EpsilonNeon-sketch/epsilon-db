@@ -12,6 +12,133 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
     <style>
+        /* ===== NEOTE TERMINAL ===== */
+.neote-terminal {
+    background: #08080e;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 220px);
+    min-height: 400px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.neote-terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.65rem 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.neote-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.neote-dot.r { background: #ef4444; }
+.neote-dot.y { background: #f59e0b; }
+.neote-dot.g { background: #10b981; }
+
+.neote-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    scroll-behavior: smooth;
+}
+
+.neote-line {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.neote-cmd {
+    color: var(--text-muted);
+}
+
+.neote-cmd .neote-hl {
+    color: var(--accent);
+}
+
+.neote-sys {
+    color: #4b5563;
+}
+
+.neote-out {
+    color: #d1d5db;
+}
+
+.neote-ok {
+    color: #34d399;
+}
+
+.neote-err {
+    color: #f87171;
+}
+
+.neote-warn {
+    color: #fbbf24;
+}
+
+.neote-hl {
+    color: #c084fc;
+}
+
+.neote-json {
+    color: #9ca3af;
+}
+
+.neote-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.neote-prompt {
+    color: var(--accent);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.neote-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    caret-color: var(--accent);
+}
+
+.neote-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .neote-terminal {
+        height: calc(100vh - 180px);
+        min-height: 320px;
+    }
+    .neote-input-row {
+        padding: 0.6rem 0.75rem;
+    }
+    .neote-output {
+        padding: 0.75rem;
+    }
+}
         :root {
             --bg-deep: #06060b;
             --bg-primary: #0a0a12;
@@ -545,6 +672,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                     Collections
                 </button>
+                <button class="nav-item" data-page="neote" onclick="navigateTo('neote')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    Neote Terminal
+</button>
                 <button class="nav-item" data-page="monitor" onclick="navigateTo('monitor')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
                     Monitor
@@ -635,6 +766,31 @@
                 </div>
                 <div id="keysContainer" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
             </div>
+
+<!-- Neote Terminal Page -->
+<div class="page-section" id="neotePage">
+    <div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h2 class="page-title">Neote Terminal</h2>
+            <p class="page-subtitle">Programmatic collection &amp; document management</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="neoteClear()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Clear
+        </button>
+    </div>
+    <div class="neote-terminal" id="neoteTerminal">
+        <div class="neote-output" id="neoteOutput">
+            <div class="neote-line neote-sys">Epsilon DB — Neote Terminal v1.0</div>
+            <div class="neote-line neote-sys">Type <span class="neote-hl">help</span> for available commands.</div>
+            <div class="neote-line neote-sys">───────────────────────────────────────</div>
+        </div>
+        <div class="neote-input-row">
+            <span class="neote-prompt">neote &gt;</span>
+            <input type="text" class="neote-input" id="neoteInput" spellcheck="false" autocomplete="off" placeholder="Enter command...">
+        </div>
+    </div>
+</div>
 
             <!-- Docs Page -->
             <div class="page-section" id="docsPage">
@@ -1503,6 +1659,262 @@
         }
 
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+        // ==============================
+// NEOTE TERMINAL
+// ==============================
+var neoteHistory = [];
+var neoteHistIdx = -1;
+
+// Extend navigateTo map
+(function() {
+    var origNav = navigateTo;
+    navigateTo = function(page) {
+        if (page === 'neote') {
+            document.querySelectorAll('.page-section').forEach(function(s) { s.classList.remove('active'); });
+            document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+            document.getElementById('neotePage').classList.add('active');
+            var nb = document.querySelector('.nav-item[data-page="neote"]');
+            if (nb) nb.classList.add('active');
+            setTimeout(function() { document.getElementById('neoteInput').focus(); }, 100);
+            return;
+        }
+        origNav(page);
+    };
+})();
+
+// Input handling
+document.getElementById('neoteInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        var val = this.value.trim();
+        if (val) {
+            neoteHistory.push(val);
+            neoteHistIdx = neoteHistory.length;
+            neoteExec(val);
+            this.value = '';
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (neoteHistIdx > 0) {
+            neoteHistIdx--;
+            this.value = neoteHistory[neoteHistIdx];
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (neoteHistIdx < neoteHistory.length - 1) {
+            neoteHistIdx++;
+            this.value = neoteHistory[neoteHistIdx];
+        } else {
+            neoteHistIdx = neoteHistory.length;
+            this.value = '';
+        }
+    }
+});
+
+// Focus terminal on click
+document.getElementById('neoteTerminal').addEventListener('click', function() {
+    document.getElementById('neoteInput').focus();
+});
+
+function neoteClear() {
+    var out = document.getElementById('neoteOutput');
+    out.innerHTML = '<div class="neote-line neote-sys">Terminal cleared.</div>';
+}
+
+function neotePrint(html, cls) {
+    var out = document.getElementById('neoteOutput');
+    var div = document.createElement('div');
+    div.className = 'neote-line ' + (cls || 'neote-out');
+    div.innerHTML = html;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+}
+
+function neotePrintJSON(obj) {
+    var raw = JSON.stringify(obj, null, 2);
+    var esc = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var colored = esc
+        .replace(/"([^"]+)"(\s*:)/g, '<span class="neote-hl">"$1"</span>$2')
+        .replace(/:\s*"([^"]*)"/g, ': <span class="neote-ok">"$1"</span>')
+        .replace(/:\s*(\d+\.?\d*)/g, ': <span style="color:#60a5fa">$1</span>')
+        .replace(/:\s*(true|false)/g, ': <span style="color:#fbbf24">$1</span>')
+        .replace(/:\s*(null)/g, ': <span class="neote-sys">$1</span>');
+    neotePrint('<span class="neote-json">' + colored + '</span>');
+}
+
+function neotePrintCmd(cmd) {
+    neotePrint('<span class="neote-cmd"><span class="neote-hl">neote &gt;</span> ' + neoteEsc(cmd) + '</span>', 'neote-cmd');
+}
+
+function neoteEsc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function neoteEnsureProfile() {
+    if (!profileData) {
+        neotePrint('Not authenticated.', 'neote-err');
+        return false;
+    }
+    if (!profileData.db) profileData.db = { collections: {}, api_keys: [] };
+    if (!profileData.db.collections) profileData.db.collections = {};
+    return true;
+}
+
+// ---- Command Parser ----
+async function neoteExec(raw) {
+    neotePrintCmd(raw);
+    var cmd = raw.trim();
+
+    if (cmd === 'help') {
+        neotePrint('');
+        neotePrint('<span class="neote-hl">Available Commands:</span>');
+        neotePrint('────────────────────────────────────────');
+        neotePrint('  <span class="neote-hl">st {-n "name"}</span>          Create a new collection');
+        neotePrint('  <span class="neote-hl">st --name "name"</span>       Same as above (alt syntax)');
+        neotePrint('  <span class="neote-hl">ls</span>                     List all collections');
+        neotePrint('  <span class="neote-hl">name.addDoc({...})</span>     Add document to collection');
+        neotePrint('  <span class="neote-hl">name.getDocs()</span>         Get all documents');
+        neotePrint('  <span class="neote-hl">name.find({key:"val"})</span> Find documents by field');
+        neotePrint('  <span class="neote-hl">name.del()</span>             Delete collection');
+        neotePrint('  <span class="neote-hl">name.count()</span>           Count documents');
+        neotePrint('  <span class="neote-hl">clear</span>                  Clear terminal');
+        neotePrint('  <span class="neote-hl">help</span>                   Show this help');
+        neotePrint('────────────────────────────────────────');
+        return;
+    }
+
+    if (cmd === 'clear') {
+        neoteClear();
+        return;
+    }
+
+    if (cmd === 'ls') {
+        if (!neoteEnsureProfile()) return;
+        var cols = profileData.db.collections;
+        var keys = Object.keys(cols);
+        if (keys.length === 0) {
+            neotePrint('No collections found.', 'neote-warn');
+        } else {
+            neotePrint('<span class="neote-hl">Collections (' + keys.length + '):</span>');
+            keys.forEach(function(k) {
+                var c = cols[k];
+                var docCount = (c.documents || []).length;
+                neotePrint('  <span class="neote-ok">●</span> ' + neoteEsc(k) + '  <span class="neote-sys">— ' + docCount + ' doc(s)</span>');
+            });
+        }
+        return;
+    }
+
+    // st {-n "name"} or st -n "name" or st --name "name"
+    var stMatch = cmd.match(/^st\s+(?:\{-n\s+"([^"]+)"\}|-n\s+"([^"]+)"|--name\s+"([^"]+)")\s*$/i);
+    if (stMatch) {
+        var colName = stMatch[1] || stMatch[2] || stMatch[3];
+        if (!neoteEnsureProfile()) return;
+        if (profileData.db.collections[colName]) {
+            neotePrint('Collection <span class="neote-hl">"' + neoteEsc(colName) + '"</span> already exists.', 'neote-warn');
+            return;
+        }
+        profileData.db.collections[colName] = { documents: [], created_at: new Date().toISOString() };
+        await saveProfile();
+        neotePrint('Collection <span class="neote-ok">"' + neoteEsc(colName) + '"</span> created.', 'neote-ok');
+        return;
+    }
+
+    // Method calls: name.method(args)
+    var methodMatch = cmd.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\.(addDoc|getDocs|find|del|delete|count)\s*(\([\s\S]*\))?\s*$/);
+    if (methodMatch) {
+        var colName = methodMatch[1];
+        var method = methodMatch[2];
+        var argsStr = methodMatch[3] || '()';
+
+        if (!neoteEnsureProfile()) return;
+
+        if (!profileData.db.collections[colName]) {
+            neotePrint('Collection <span class="neote-hl">"' + neoteEsc(colName) + '"</span> does not exist.', 'neote-err');
+            neotePrint('Use <span class="neote-hl">st {-n "' + neoteEsc(colName) + '"}</span> to create it first.', 'neote-sys');
+            return;
+        }
+
+        var collection = profileData.db.collections[colName];
+        if (!collection.documents) collection.documents = [];
+
+        if (method === 'addDoc') {
+            var innerArgs = argsStr.slice(1, -1).trim();
+            if (!innerArgs) {
+                neotePrint('addDoc() requires a JSON object argument.', 'neote-err');
+                return;
+            }
+            try {
+                var docData = JSON.parse(innerArgs);
+                if (typeof docData !== 'object' || Array.isArray(docData) || docData === null) {
+                    neotePrint('addDoc() argument must be a JSON object {}.', 'neote-err');
+                    return;
+                }
+                var docId = 'doc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+                var newDoc = Object.assign({ _id: docId }, docData, { _created: new Date().toISOString() });
+                collection.documents.push(newDoc);
+                await saveProfile();
+                neotePrint('Document added to <span class="neote-hl">"' + neoteEsc(colName) + '"</span>', 'neote-ok');
+                neotePrint('  <span class="neote-sys">_id:</span> <span style="color:#60a5fa">' + neoteEsc(docId) + '</span>');
+                return;
+            } catch (parseErr) {
+                neotePrint('Invalid JSON: ' + neoteEsc(parseErr.message), 'neote-err');
+                return;
+            }
+        }
+
+        if (method === 'getDocs') {
+            if (collection.documents.length === 0) {
+                neotePrint('Collection <span class="neote-hl">"' + neoteEsc(colName) + '"</span> is empty.', 'neote-warn');
+            } else {
+                neotePrint('<span class="neote-hl">"' + neoteEsc(colName) + '"</span> — ' + collection.documents.length + ' document(s):');
+                neotePrintJSON(collection.documents);
+            }
+            return;
+        }
+
+        if (method === 'find') {
+            var findArgs = argsStr.slice(1, -1).trim();
+            if (!findArgs) {
+                neotePrint('find() requires a filter object {key:"value"}.', 'neote-err');
+                return;
+            }
+            try {
+                var filter = JSON.parse(findArgs);
+                var results = collection.documents.filter(function(doc) {
+                    return Object.keys(filter).every(function(fk) {
+                        return doc[fk] === filter[fk];
+                    });
+                });
+                if (results.length === 0) {
+                    neotePrint('No matching documents found.', 'neote-warn');
+                } else {
+                    neotePrint('Found <span class="neote-ok">' + results.length + '</span> matching document(s):');
+                    neotePrintJSON(results);
+                }
+                return;
+            } catch (parseErr) {
+                neotePrint('Invalid JSON in filter: ' + neoteEsc(parseErr.message), 'neote-err');
+                return;
+            }
+        }
+
+        if (method === 'del' || method === 'delete') {
+            var docCount = collection.documents.length;
+            delete profileData.db.collections[colName];
+            await saveProfile();
+            neotePrint('Collection <span class="neote-err">"' + neoteEsc(colName) + '"</span> deleted. <span class="neote-sys">(' + docCount + ' document(s) removed)</span>');
+            return;
+        }
+
+        if (method === 'count') {
+            neotePrint('"' + neoteEsc(colName) + '" has <span class="neote-ok">' + collection.documents.length + '</span> document(s).');
+            return;
+        }
+    }
+
+    // Fallback
+    neotePrint('Unknown command. Type <span class="neote-hl">help</span> for available commands.', 'neote-err');
+}
     </script>
 </body>
 
