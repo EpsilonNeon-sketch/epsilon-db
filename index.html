@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epsilon DB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #06060b;
+            --bg-primary: #0a0a12;
+            --bg-secondary: #0f0f1a;
+            --bg-card: #121220;
+            --bg-card-hover: #16162a;
+            --bg-input: #1a1a2e;
+            --border: rgba(139, 92, 246, 0.1);
+            --border-hover: rgba(139, 92, 246, 0.25);
+            --accent: #8b5cf6;
+            --accent-dim: #7c3aed;
+            --accent-glow: rgba(139, 92, 246, 0.15);
+            --accent-glow-strong: rgba(139, 92, 246, 0.35);
+            --text-primary: #e8e8f0;
+            --text-secondary: #9898b0;
+            --text-muted: #55556a;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.4);
+        }
+
+        /* Auth Page */
+        #authPage {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-deep);
+            background-image: radial-gradient(ellipse at 50% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            box-shadow: 0 0 80px rgba(139, 92, 246, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 0.6rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .auth-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 0.6rem;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .auth-btn:hover {
+            background: var(--accent-dim);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .auth-toggle {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .auth-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .auth-error {
+            color: var(--danger);
+            font-size: 0.82rem;
+            min-height: 1.2em;
+        }
+
+        /* Dashboard */
+        #dashboard {
+            display: none;
+            min-height: 100vh;
+        }
+
+        #dashboard.active {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-logo {
+            padding: 1.5rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 0.6rem;
+            background: linear-gradient(135deg, var(--accent), #6d28d9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: white;
+        }
+
+        .sidebar-logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sidebar-logo-text span {
+            color: var(--accent);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 0.85rem;
+            border-radius: 0.6rem;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-item:hover {
+            background: rgba(139, 92, 246, 0.06);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(139, 92, 246, 0.12);
+            color: var(--accent);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 0.75rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .sidebar-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #6d28d9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-user-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-user-email {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-logout {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.4rem;
+            border-radius: 0.4rem;
+            transition: all 0.2s;
+        }
+
+        .sidebar-logout:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem 2.5rem;
+            min-height: 100vh;
+            background: var(--bg-deep);
+            background-image: radial-gradient(ellipse at 50% 0%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+        }
+
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.3rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.85rem;
+            transition: all 0.25s;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .card-glow:hover {
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* Collection Cards Grid */
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .collection-card {
+            padding: 1.5rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .collection-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .collection-card:hover::after {
+            opacity: 1;
+        }
+
+        .collection-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .collection-meta {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .collection-meta-item {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .collection-delete {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.35rem;
+            border-radius: 0.35rem;
+            transition: all 0.2s;
+            z-index: 2;
+            opacity: 0;
+        }
+
+        .collection-card:hover .collection-delete {
+            opacity: 1;
+        }
+
+        .collection-delete:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* New Collection Card */
+        .new-collection-card {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            border: 2px dashed var(--border);
+            border-radius: 0.85rem;
+            color: var(--text-muted);
+            transition: all 0.25s;
+            min-height: 140px;
+        }
+
+        .new-collection-card:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .new-collection-card svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .new-collection-card span {
+            font-weight: 600;
+            font-size: 0.88rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.55rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dim);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.78rem;
+        }
+
+        .btn-icon {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .btn-icon.danger:hover {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        /* Back button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 1.25rem;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--accent);
+        }
+
+        /* Documents Table */
+        .doc-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            background: var(--bg-card);
+        }
+
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .doc-table th {
+            text-align: left;
+            padding: 0.85rem 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .doc-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .doc-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .doc-table tr:hover td {
+            background: rgba(139, 92, 246, 0.03);
+        }
+
+        .doc-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent);
+        }
+
+        .doc-preview {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            max-width: 400px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .doc-empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .doc-empty svg {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 0.75rem;
+            opacity: 0.4;
+        }
+
+        /* JSON Editor */
+        .json-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 0.6rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .json-editor:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 560px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 0.3rem;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.6rem;
+        }
+
+        /* API Keys Page */
+        .key-card {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .key-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .key-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .key-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .key-value code {
+            background: var(--bg-input);
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.3rem;
+        }
+
+        .key-date {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .key-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Docs Page */
+        .docs-content {
+            max-width: 800px;
+        }
+
+        .docs-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .docs-section h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .docs-code-block {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            color: var(--text-secondary);
+        }
+
+        .docs-code-block .kw {
+            color: #c084fc;
+        }
+
+        .docs-code-block .str {
+            color: #34d399;
+        }
+
+        .docs-code-block .fn {
+            color: #60a5fa;
+        }
+
+        .docs-code-block .cmt {
+            color: var(--text-muted);
+        }
+
+        .docs-p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            padding: 0.85rem 1.25rem;
+            border-radius: 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            transform: translateX(120%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+        }
+
+        /* JSON Viewer */
+        .json-viewer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text-secondary);
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.6rem;
+            border: 1px solid var(--border);
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        .json-viewer .jk {
+            color: #c084fc;
+        }
+
+        .json-viewer .js {
+            color: #34d399;
+        }
+
+        .json-viewer .jn {
+            color: #60a5fa;
+        }
+
+        .json-viewer .jb {
+            color: #f59e0b;
+        }
+
+        .json-viewer .jnull {
+            color: var(--text-muted);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Hamburger */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Label */
+        .label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: 0.55rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Detail header bar */
+        .detail-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1.25rem;
+                padding-top: 3.5rem;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .collections-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== AUTH PAGE ===== -->
+    <div id="authPage">
+        <div class="auth-card">
+            <div style="text-align:center; margin-bottom:2rem;">
+                <div class="sidebar-logo-icon" style="margin:0 auto 0.75rem; width:44px; height:44px; font-size:1rem;">ε
+                </div>
+                <h1 style="font-size:1.5rem; font-weight:800; letter-spacing:-0.03em;">Epsilon <span
+                        style="color:var(--accent)">DB</span></h1>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.3rem;" id="authSubtitle">Sign in to
+                    your account</p>
+            </div>
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div id="signupNameField" class="form-group" style="display:none;">
+                    <label class="label">Username</label>
+                    <input type="text" class="form-input" id="authName" placeholder="your_username"
+                        autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="label">Email</label>
+                    <input type="email" class="form-input" id="authEmail" placeholder="you@example.com" required
+                        autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="label">Password</label>
+                    <input type="password" class="form-input" id="authPassword" placeholder="••••••••" required
+                        minlength="6" autocomplete="current-password">
+                </div>
+                <div class="auth-error" id="authError"></div>
+                <button type="submit" class="auth-btn" id="authBtn" style="margin-top:0.5rem;">
+                    <span id="authBtnText">Sign In</span>
+                </button>
+            </form>
+            <p style="text-align:center; margin-top:1.5rem; font-size:0.85rem; color:var(--text-muted);">
+                <span id="authToggleText">Don't have an account?</span>
+                <a class="auth-toggle" id="authToggle" onclick="toggleAuthMode()">Sign Up</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="dashboard">
+        <!-- Mobile menu toggle -->
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">ε</div>
+                <div class="sidebar-logo-text">Epsilon <span>DB</span></div>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-page="collections" onclick="navigateTo('collections')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Collections
+                </button>
+                <button class="nav-item" data-page="apikeys" onclick="navigateTo('apikeys')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                    </svg>
+                    API Keys
+                </button>
+                <button class="nav-item" data-page="docs" onclick="navigateTo('docs')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    Documentation
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+                    <div class="sidebar-user-email" id="sidebarEmail">...</div>
+                </div>
+                <button class="sidebar-logout" onclick="handleLogout()" title="Sign Out">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Collections Page -->
+            <div class="page-section active" id="collectionsPage">
+                <div class="page-header"
+                    style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <h2 class="page-title">Collections</h2>
+                        <p class="page-subtitle">Manage your data collections</p>
+                    </div>
+                </div>
+                <div class="collections-grid" id="collectionsGrid">
+                    <div class="new-collection-card" onclick="openCreateCollectionModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        <span>New Collection</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collection Detail Page -->
+            <div class="page-section" id="collectionDetailPage">
+                <button class="back-btn" onclick="navigateTo('collections')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12" />
+                        <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                    Back to Collections
+                </button>
+                <div class="detail-bar">
+                    <div>
+                        <h2 class="page-title" id="detailTitle">Collection</h2>
+                        <p class="page-subtitle" id="detailSubtitle">0 documents</p>
+                    </div>
+                    <div style="display:flex; gap:0.6rem;">
+                        <button class="btn btn-primary btn-sm" onclick="openAddDocModal()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Add Document
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteCollection()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            Delete Collection
+                        </button>
+                    </div>
+                </div>
+                <div id="documentsContainer"></div>
+            </div>
+
+            <!-- API Keys Page -->
+            <div class="page-section" id="apikeysPage">
+                <div class="page-header"
+                    style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <h2 class="page-title">API Keys</h2>
+                        <p class="page-subtitle">Manage keys for programmatic access</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateKeyModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Generate Key
+                    </button>
+                </div>
+                <div id="keysContainer" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+            </div>
+
+            <!-- Docs Page -->
+            <div class="page-section" id="docsPage">
+                <div class="page-header">
+                    <h2 class="page-title">Documentation</h2>
+                    <p class="page-subtitle">Use Epsilon DB in your projects</p>
+                </div>
+                <div class="docs-content">
+                    <div class="docs-section">
+                        <h3>Quick Start</h3>
+                        <p class="docs-p">Include the library in your HTML file. It requires Supabase JS to be loaded
+                            first.</p>
+                        <div class="docs-code-block"><span class="cmt">&lt;!-- Load Supabase first --&gt;</span>
+                            &lt;script src=<span
+                                class="str">"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"</span>&gt;&lt;/script&gt;
+                            <span class="cmt">&lt;!-- Then Epsilon DB --&gt;</span>
+                            &lt;script src=<span class="str">"epsilondbs.js"</span>&gt;&lt;/script&gt;
+                        </div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Initialize</h3>
+                        <div class="docs-code-block"><span class="kw">const</span> db = <span class="kw">new</span>
+                            <span class="fn">EpsilonDB</span>({
+                            apiKey: <span class="str">'epk_live_...'</span>
+                            });</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Create a Collection</h3>
+                        <div class="docs-code-block"><span class="kw">await</span> db.<span
+                                class="fn">createCollection</span>(<span class="str">'users'</span>);</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Add a Document</h3>
+                        <div class="docs-code-block"><span class="kw">const</span> doc = <span class="kw">await</span>
+                            db.<span class="fn">collection</span>(<span class="str">'users'</span>).<span
+                                class="fn">add</span>({
+                            name: <span class="str">'John'</span>,
+                            email: <span class="str">'john@test.com'</span>
+                            });
+                            <span class="cmt">// doc._id = auto-generated ID</span>
+                        </div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Get All Documents</h3>
+                        <div class="docs-code-block"><span class="kw">const</span> docs = <span class="kw">await</span>
+                            db.<span class="fn">collection</span>(<span class="str">'users'</span>).<span
+                                class="fn">get</span>();</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Get by ID</h3>
+                        <div class="docs-code-block"><span class="kw">const</span> doc = <span class="kw">await</span>
+                            db.<span class="fn">collection</span>(<span class="str">'users'</span>).<span
+                                class="fn">getById</span>(<span class="str">'abc123'</span>);</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Update a Document</h3>
+                        <div class="docs-code-block"><span class="kw">await</span> db.<span
+                                class="fn">collection</span>(<span class="str">'users'</span>).<span
+                                class="fn">update</span>(<span class="str">'abc123'</span>, {
+                            name: <span class="str">'Jane'</span>
+                            });</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Delete a Document</h3>
+                        <div class="docs-code-block"><span class="kw">await</span> db.<span
+                                class="fn">collection</span>(<span class="str">'users'</span>).<span
+                                class="fn">delete</span>(<span class="str">'abc123'</span>);</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>Delete a Collection</h3>
+                        <div class="docs-code-block"><span class="kw">await</span> db.<span
+                                class="fn">deleteCollection</span>(<span class="str">'users'</span>);</div>
+                    </div>
+                    <div class="docs-section">
+                        <h3>List Collections</h3>
+                        <div class="docs-code-block"><span class="kw">const</span> cols = <span class="kw">await</span>
+                            db.<span class="fn">listCollections</span>();</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL ===== -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Modal</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==============================
+        // SUPABASE INIT
+        // ==============================
+        const { createClient } = supabase;
+        const supabaseClient = createClient('https://gfsqzkyviivhvyqadpeg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc3F6a3l2aWl2aHZ5cWFkcGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDI0NDQsImV4cCI6MjA4NjAxODQ0NH0.MwC6dMZKFZMyklCJKqr4DPek8dxR-EswBZSd1L_AkMA', {
+            auth: { persistSession: true, storageKey: 'epsilon-db-auth' }
+        });
+
+        // ==============================
+        // STATE
+        // ==============================
+        let currentUser = null;
+        let profileData = null;
+        let isSignUp = false;
+        let currentCollection = null;
+
+        // ==============================
+        // AUTH
+        // ==============================
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById('signupNameField').style.display = isSignUp ? 'block' : 'none';
+            document.getElementById('authBtnText').textContent = isSignUp ? 'Create Account' : 'Sign In';
+            document.getElementById('authSubtitle').textContent = isSignUp ? 'Create your account' : 'Sign in to your account';
+            document.getElementById('authToggleText').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
+            document.getElementById('authToggle').textContent = isSignUp ? 'Sign In' : 'Sign Up';
+            document.getElementById('authError').textContent = '';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const btn = document.getElementById('authBtn');
+            const errEl = document.getElementById('authError');
+            errEl.textContent = '';
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="margin:0 auto;"></div>';
+
+            try {
+                let result;
+                if (isSignUp) {
+                    const username = document.getElementById('authName').value.trim();
+                    if (!username) { errEl.textContent = 'Username is required'; btn.disabled = false; btn.innerHTML = '<span id="authBtnText">Create Account</span>'; return; }
+                    result = await supabaseClient.auth.signUp({ email, password });
+                    if (result.error) throw result.error;
+                    // Create profile
+                    if (result.data.user) {
+                        await supabaseClient.from('profiles').upsert({
+                            id: result.data.user.id,
+                            username: username,
+                            email: email,
+                            display_name: username,
+                            db: { collections: {}, api_keys: [] }
+                        });
+                    }
+                    showToast('Account created! Check your email to verify.', 'success');
+                } else {
+                    result = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (result.error) throw result.error;
+                }
+            } catch (err) {
+                errEl.textContent = err.message || 'Authentication failed';
+                btn.disabled = false;
+                btn.innerHTML = `<span id="authBtnText">${isSignUp ? 'Create Account' : 'Sign In'}</span>`;
+                return;
+            }
+        }
+
+        async function handleLogout() {
+            await supabaseClient.auth.signOut();
+            currentUser = null;
+            profileData = null;
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('authPage').style.display = 'flex';
+            document.getElementById('authError').textContent = '';
+            document.getElementById('authBtn').disabled = false;
+            document.getElementById('authBtn').innerHTML = '<span id="authBtnText">Sign In</span>';
+        }
+
+        // ==============================
+        // PROFILE
+        // ==============================
+        async function loadProfile() {
+            if (!currentUser) return;
+            let { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (error || !data) {
+                // Try creating profile
+                await supabaseClient.from('profiles').upsert({
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    username: currentUser.email?.split('@')[0] || 'user',
+                    display_name: currentUser.email?.split('@')[0] || 'User',
+                    db: { collections: {}, api_keys: [] }
+                });
+                ({ data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single());
+            }
+            profileData = data;
+            if (!profileData.db) profileData.db = { collections: {}, api_keys: [] };
+            if (!profileData.db.collections) profileData.db.collections = {};
+            if (!profileData.db.api_keys) profileData.db.api_keys = [];
+
+            // Update sidebar
+            const name = profileData.display_name || profileData.username || 'User';
+            document.getElementById('sidebarName').textContent = name;
+            document.getElementById('sidebarEmail').textContent = profileData.email || '';
+            document.getElementById('sidebarAvatar').textContent = name.charAt(0).toUpperCase();
+        }
+
+        async function saveProfile() {
+            if (!profileData) return;
+            await supabaseClient.from('profiles').update({
+                db: profileData.db,
+                updated_at: new Date().toISOString()
+            }).eq('id', currentUser.id);
+        }
+
+        // ==============================
+        // NAVIGATION
+        // ==============================
+        function navigateTo(page, collectionName) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            if (page === 'collections') {
+                document.getElementById('collectionsPage').classList.add('active');
+                document.querySelector('[data-page="collections"]').classList.add('active');
+                renderCollections();
+            } else if (page === 'detail') {
+                currentCollection = collectionName;
+                document.getElementById('collectionDetailPage').classList.add('active');
+                document.querySelector('[data-page="collections"]').classList.add('active');
+                renderCollectionDetail();
+            } else if (page === 'apikeys') {
+                document.getElementById('apikeysPage').classList.add('active');
+                document.querySelector('[data-page="apikeys"]').classList.add('active');
+                renderApiKeys();
+            } else if (page === 'docs') {
+                document.getElementById('docsPage').classList.add('active');
+                document.querySelector('[data-page="docs"]').classList.add('active');
+            }
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        // ==============================
+        // COLLECTIONS
+        // ==============================
+        function renderCollections() {
+            const grid = document.getElementById('collectionsGrid');
+            const collections = profileData?.db?.collections || {};
+            let html = `<div class="new-collection-card" onclick="openCreateCollectionModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <span>New Collection</span>
+  </div>`;
+
+            for (const [name, col] of Object.entries(collections)) {
+                const docs = col.documents || [];
+                const count = docs.length;
+                html += `<div class="card card-glow collection-card" onclick="navigateTo('detail','${escHtml(name)}')">
+      <button class="collection-delete" onclick="event.stopPropagation();deleteCollection('${escHtml(name)}')" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+      <div class="collection-name">${escHtml(name)}</div>
+      <div class="collection-meta">
+        <div class="collection-meta-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          ${count} document${count !== 1 ? 's' : ''}
+        </div>
+      </div>
+    </div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function openCreateCollectionModal() {
+            document.getElementById('modalTitle').textContent = 'Create Collection';
+            document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label class="label">Collection Name</label>
+      <input type="text" class="form-input" id="newColName" placeholder="e.g. users, products, orders" autofocus>
+    </div>`;
+            document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="createCollection()">Create</button>`;
+            openModal();
+            setTimeout(() => document.getElementById('newColName')?.focus(), 100);
+        }
+
+        async function createCollection() {
+            const name = document.getElementById('newColName').value.trim();
+            if (!name) return showToast('Name is required', 'error');
+            if (profileData.db.collections[name]) return showToast('Collection already exists', 'error');
+            if (!/^[a-zA-Z0-9_-]+$/.test(name)) return showToast('Only letters, numbers, _ and - allowed', 'error');
+
+            profileData.db.collections[name] = { documents: [] };
+            await saveProfile();
+            closeModal();
+            renderCollections();
+            showToast(`Collection "${name}" created`, 'success');
+        }
+
+        async function deleteCollection(name) {
+            if (!confirm(`Delete collection "${name}" and all its documents?`)) return;
+            delete profileData.db.collections[name];
+            await saveProfile();
+            renderCollections();
+            showToast(`Collection "${name}" deleted`, 'info');
+        }
+
+        function confirmDeleteCollection() {
+            if (!currentCollection) return;
+            if (!confirm(`Delete collection "${currentCollection}" and all its documents?`)) return;
+            delete profileData.db.collections[currentCollection];
+            saveProfile();
+            navigateTo('collections');
+            showToast(`Collection "${currentCollection}" deleted`, 'info');
+        }
+
+        // ==============================
+        // DOCUMENTS
+        // ==============================
+        function renderCollectionDetail() {
+            const col = profileData?.db?.collections?.[currentCollection];
+            document.getElementById('detailTitle').textContent = currentCollection;
+            const docs = col?.documents || [];
+            document.getElementById('detailSubtitle').textContent = `${docs.length} document${docs.length !== 1 ? 's' : ''}`;
+
+            const container = document.getElementById('documentsContainer');
+            if (docs.length === 0) {
+                container.innerHTML = `<div class="doc-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>No documents yet</p>
+      <p style="font-size:0.78rem; margin-top:0.3rem;">Click "Add Document" to get started</p>
+    </div>`;
+                return;
+            }
+
+            let rows = '';
+            docs.forEach(doc => {
+                const preview = JSON.stringify(Object.fromEntries(Object.entries(doc).filter(([k]) => !k.startsWith('_'))), null, 0);
+                const truncated = preview.length > 80 ? preview.substring(0, 77) + '...' : preview;
+                rows += `<tr>
+      <td><span class="doc-id">${escHtml(doc._id)}</span></td>
+      <td><span class="doc-preview">${escHtml(truncated)}</span></td>
+      <td><div class="doc-actions">
+        <button class="btn-icon" onclick="viewDocument('${doc._id}')" title="View">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="btn-icon" onclick="openEditDocModal('${doc._id}')" title="Edit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-icon danger" onclick="deleteDocument('${doc._id}')" title="Delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div></td>
+    </tr>`;
+            });
+
+            container.innerHTML = `<div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th style="width:140px;">ID</th><th>Preview</th><th style="width:120px;">Actions</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+        }
+
+        function openAddDocModal() {
+            document.getElementById('modalTitle').textContent = 'Add Document';
+            document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label class="label">JSON Data</label>
+      <textarea class="json-editor" id="newDocJson" placeholder='{ "key": "value" }'></textarea>
+    </div>`;
+            document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="addDocument()">Add</button>`;
+            openModal();
+        }
+
+        async function addDocument() {
+            const raw = document.getElementById('newDocJson').value.trim();
+            if (!raw) return showToast('JSON data is required', 'error');
+            let data;
+            try { data = JSON.parse(raw); } catch { return showToast('Invalid JSON', 'error'); }
+            if (typeof data !== 'object' || Array.isArray(data)) return showToast('Must be a JSON object', 'error');
+
+            const id = generateId();
+            const now = new Date().toISOString();
+            const doc = { _id: id, _created: now, _updated: now, ...data };
+            if (!profileData.db.collections[currentCollection]) profileData.db.collections[currentCollection] = { documents: [] };
+            profileData.db.collections[currentCollection].documents.push(doc);
+            await saveProfile();
+            closeModal();
+            renderCollectionDetail();
+            showToast('Document added', 'success');
+        }
+
+        function openEditDocModal(docId) {
+            const col = profileData.db.collections[currentCollection];
+            const doc = col.documents.find(d => d._id === docId);
+            if (!doc) return;
+            const clean = Object.fromEntries(Object.entries(doc).filter(([k]) => !k.startsWith('_')));
+            document.getElementById('modalTitle').textContent = 'Edit Document';
+            document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label class="label">JSON Data</label>
+      <textarea class="json-editor" id="editDocJson">${escHtml(JSON.stringify(clean, null, 2))}</textarea>
+    </div>`;
+            document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="updateDocument('${docId}')">Save</button>`;
+            openModal();
+        }
+
+        async function updateDocument(docId) {
+            const raw = document.getElementById('editDocJson').value.trim();
+            let data;
+            try { data = JSON.parse(raw); } catch { return showToast('Invalid JSON', 'error'); }
+            if (typeof data !== 'object' || Array.isArray(data)) return showToast('Must be a JSON object', 'error');
+
+            const col = profileData.db.collections[currentCollection];
+            const idx = col.documents.findIndex(d => d._id === docId);
+            if (idx === -1) return;
+            col.documents[idx] = { ...col.documents[idx], ...data, _id: docId, _updated: new Date().toISOString() };
+            await saveProfile();
+            closeModal();
+            renderCollectionDetail();
+            showToast('Document updated', 'success');
+        }
+
+        function viewDocument(docId) {
+            const col = profileData.db.collections[currentCollection];
+            const doc = col.documents.find(d => d._id === docId);
+            if (!doc) return;
+            document.getElementById('modalTitle').textContent = `Document: ${docId}`;
+            document.getElementById('modalBody').innerHTML = `<div class="json-viewer">${syntaxHighlight(JSON.stringify(doc, null, 2))}</div>`;
+            document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>`;
+            openModal();
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Delete this document?')) return;
+            const col = profileData.db.collections[currentCollection];
+            col.documents = col.documents.filter(d => d._id !== docId);
+            await saveProfile();
+            renderCollectionDetail();
+            showToast('Document deleted', 'info');
+        }
+
+        // ==============================
+        // API KEYS
+        // ==============================
+        function renderApiKeys() {
+            const keys = profileData?.db?.api_keys || [];
+            const container = document.getElementById('keysContainer');
+            if (keys.length === 0) {
+                container.innerHTML = `<div class="card" style="padding:3rem; text-align:center; color:var(--text-muted);">
+      <p>No API keys yet</p>
+      <p style="font-size:0.78rem; margin-top:0.3rem;">Generate a key to use Epsilon DB from your apps</p>
+    </div>`;
+                return;
+            }
+            let html = '';
+            keys.forEach((k, i) => {
+                const masked = k.key.substring(0, 12) + '••••••••••••••••';
+                html += `<div class="card key-card">
+      <div class="key-info">
+        <div class="key-name">${escHtml(k.name || 'Unnamed Key')}</div>
+        <div class="key-value"><code>${escHtml(masked)}</code></div>
+        <div class="key-date">Created ${new Date(k.created_at).toLocaleDateString()} ${new Date(k.created_at).toLocaleTimeString()}</div>
+      </div>
+      <div class="key-actions">
+        <button class="btn btn-secondary btn-sm" onclick="copyKey(${i})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="revokeKey(${i})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Revoke
+        </button>
+      </div>
+    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function openCreateKeyModal() {
+            document.getElementById('modalTitle').textContent = 'Generate API Key';
+            document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label class="label">Key Name</label>
+      <input type="text" class="form-input" id="newKeyName" placeholder="e.g. Production, Testing" autofocus>
+    </div>
+    <p style="font-size:0.78rem; color:var(--warning); display:flex; align-items:flex-start; gap:0.4rem;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0; margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Make sure to copy your key after generating. It won't be shown again.
+    </p>`;
+            document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="generateApiKey()">Generate</button>`;
+            openModal();
+            setTimeout(() => document.getElementById('newKeyName')?.focus(), 100);
+        }
+
+        async function generateApiKey() {
+            const name = document.getElementById('newKeyName').value.trim() || 'Default';
+            const key = 'epk_live_' + generateId() + generateId();
+            const now = new Date().toISOString();
+            profileData.db.api_keys.push({ key, name, created_at: now });
+            await saveProfile();
+
+            // Show the key one time
+            document.getElementById('modalTitle').textContent = 'Key Generated';
+            document.getElementById('modalBody').innerHTML = `
+    <p style="margin-bottom:0.75rem; font-size:0.85rem; color:var(--text-secondary);">Copy this key now. You won't see it again:</p>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <code style="flex:1; background:var(--bg-input); padding:0.75rem 1rem; border-radius:0.5rem; font-family:'JetBrains Mono',monospace; font-size:0.78rem; word-break:break-all; color:var(--accent);">${escHtml(key)}</code>
+      <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${key}');showToast('Copied!','success')">Copy</button>
+    </div>`;
+            document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary btn-sm" onclick="closeModal();renderApiKeys()">Done</button>`;
+            // Don't re-render yet - user needs to copy
+        }
+
+        function copyKey(index) {
+            const key = profileData.db.api_keys[index]?.key;
+            if (!key) return showToast('Key not found', 'error');
+            navigator.clipboard.writeText(key).then(() => showToast('Key copied to clipboard', 'success'));
+        }
+
+        async function revokeKey(index) {
+            const name = profileData.db.api_keys[index]?.name || 'this key';
+            if (!confirm(`Revoke "${name}"? This cannot be undone.`)) return;
+            profileData.db.api_keys.splice(index, 1);
+            await saveProfile();
+            renderApiKeys();
+            showToast('Key revoked', 'info');
+        }
+
+        // ==============================
+        // MODAL / TOAST / UTILS
+        // ==============================
+        function openModal() { document.getElementById('modalOverlay').classList.add('active'); }
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+        }
+
+        function escHtml(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function syntaxHighlight(json) {
+            return json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"([^"]+)"(?=\s*:)/g, '<span class="jk">"$1"</span>')
+                .replace(/:\s*"([^"]*)"/g, ': <span class="js">"$1"</span>')
+                .replace(/:\s*(\d+\.?\d*)/g, ': <span class="jn">$1</span>')
+                .replace(/:\s*(true|false)/g, ': <span class="jb">$1</span>')
+                .replace(/:\s*(null)/g, ': <span class="jnull">$1</span>');
+        }
+
+        // ==============================
+        // AUTH STATE LISTENER
+        // ==============================
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
+                currentUser = session.user;
+                document.getElementById('authPage').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                await loadProfile();
+                navigateTo('collections');
+            } else {
+                currentUser = null;
+                profileData = null;
+                document.getElementById('dashboard').classList.remove('active');
+                document.getElementById('authPage').style.display = 'flex';
+            }
+        });
+
+        // Check existing session on load
+        (async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session?.user) {
+                currentUser = session.user;
+                document.getElementById('authPage').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                await loadProfile();
+                navigateTo('collections');
+            }
+        })();
+    </script>
+</body>
+
+</html>
