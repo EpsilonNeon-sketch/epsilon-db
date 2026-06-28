@@ -7,6 +7,7 @@
     <title>Epsilon DB</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
@@ -66,15 +67,6 @@
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
             background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
-
-        .auth-input {
-            width: 100%; padding: 0.75rem 1rem; background: var(--bg-input);
-            border: 1.5px solid var(--border); border-radius: 0.6rem;
-            color: var(--text-primary); font-family: 'Inter', sans-serif;
-            font-size: 0.9rem; transition: all 0.2s; outline: none;
-        }
-        .auth-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-        .auth-input::placeholder { color: var(--text-muted); }
 
         .auth-btn {
             width: 100%; padding: 0.8rem; border: none; border-radius: 0.6rem;
@@ -326,6 +318,163 @@
 
         .detail-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
 
+        /* ===== MONITOR PAGE ===== */
+        .monitor-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .stat-card.cyan::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+        .stat-card.amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .stat-card.emerald::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+        .stat-icon.cyan { background: rgba(6, 182, 212, 0.12); color: #06b6d4; }
+        .stat-icon.amber { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+        .stat-icon.emerald { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+
+        .stat-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .monitor-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .chart-card {
+            padding: 1.5rem;
+        }
+
+        .chart-card-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .chart-card-sub {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .chart-wrap.doughnut-wrap {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .monitor-full-chart {
+            margin-bottom: 1.25rem;
+        }
+
+        .monitor-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .monitor-empty svg {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            opacity: 0.3;
+        }
+
+        .monitor-refresh {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            padding: 0.3rem 0;
+            transition: color 0.2s;
+        }
+
+        .monitor-refresh:hover { color: var(--accent); }
+        .monitor-refresh svg { transition: transform 0.4s; }
+        .monitor-refresh.spinning svg { transform: rotate(360deg); }
+
+        .storage-bar-wrap {
+            margin-top: 1rem;
+        }
+
+        .storage-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .storage-bar-track {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .storage-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #8b5cf6, #06b6d4, #10b981);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (max-width: 900px) {
+            .monitor-charts { grid-template-columns: 1fr; }
+        }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
@@ -333,6 +482,11 @@
             .menu-toggle { display: flex; }
             .collections-grid { grid-template-columns: 1fr; }
             .detail-bar { flex-direction: column; align-items: flex-start; }
+            .monitor-stats { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .monitor-stats { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -391,6 +545,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                     Collections
                 </button>
+                <button class="nav-item" data-page="monitor" onclick="navigateTo('monitor')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    Monitor
+                </button>
                 <button class="nav-item" data-page="apikeys" onclick="navigateTo('apikeys')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                     API Keys
@@ -413,6 +571,7 @@
         </aside>
 
         <div class="main-content">
+            <!-- Collections Page -->
             <div class="page-section active" id="collectionsPage">
                 <div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
                     <div><h2 class="page-title">Collections</h2><p class="page-subtitle">Manage your data collections</p></div>
@@ -425,6 +584,25 @@
                 </div>
             </div>
 
+            <!-- Monitor Page -->
+            <div class="page-section" id="monitorPage">
+                <div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <h2 class="page-title">Monitor</h2>
+                        <p class="page-subtitle">Account usage and collection analytics</p>
+                    </div>
+                    <button class="monitor-refresh" id="monitorRefreshBtn" onclick="refreshMonitor()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+
+                <div class="monitor-stats" id="monitorStats"></div>
+
+                <div id="monitorChartsArea"></div>
+            </div>
+
+            <!-- Collection Detail Page -->
             <div class="page-section" id="collectionDetailPage">
                 <button class="back-btn" onclick="navigateTo('collections')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -446,6 +624,7 @@
                 <div id="documentsContainer"></div>
             </div>
 
+            <!-- API Keys Page -->
             <div class="page-section" id="apikeysPage">
                 <div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
                     <div><h2 class="page-title">API Keys</h2><p class="page-subtitle">Manage keys for programmatic access</p></div>
@@ -457,6 +636,7 @@
                 <div id="keysContainer" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
             </div>
 
+            <!-- Docs Page -->
             <div class="page-section" id="docsPage">
                 <div class="page-header"><h2 class="page-title">Documentation</h2><p class="page-subtitle">Use Epsilon DB in your projects</p></div>
                 <div class="docs-content">
@@ -503,8 +683,8 @@
         // ==============================
         // SUPABASE INIT
         // ==============================
-        const { createClient } = supabase;
-        const supabaseClient = createClient(
+        var { createClient } = supabase;
+        var supabaseClient = createClient(
             'https://gfsqzkyviivhvyqadpeg.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc3F6a3l2aWl2aHZ5cWFkcGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDI0NDQsImV4cCI6MjA4NjAxODQ0NH0.MwC6dMZKFZMyklCJKqr4DPek8dxR-EswBZSd1L_AkMA',
             {
@@ -520,21 +700,29 @@
         // ==============================
         // STATE
         // ==============================
-        let currentUser = null;
-        let profileData = null;
-        let isSignUp = false;
-        let currentCollection = null;
-        let _authTransitioning = false;
+        var currentUser = null;
+        var profileData = null;
+        var isSignUp = false;
+        var currentCollection = null;
+        var _authTransitioning = false;
+
+        // Chart instances for cleanup
+        var _chartInstances = {};
+
+        // Chart color palette
+        var CHART_COLORS = [
+            '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981',
+            '#ef4444', '#ec4899', '#3b82f6', '#f97316',
+            '#14b8a6', '#a855f7', '#eab308', '#6366f1'
+        ];
+
+        var CHART_COLORS_ALPHA = CHART_COLORS.map(function(c) { return c + '33'; });
 
         // ==============================
         // AUTH STATE LISTENER
-        // Only handles: page reloads, tab focus, token refresh
-        // Does NOT handle sign-in/sign-up clicks (handleAuth does that directly)
         // ==============================
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            // Skip if handleAuth is already managing the transition
+        supabaseClient.auth.onAuthStateChange(async function(event, session) {
             if (_authTransitioning) return;
-
             if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
                 if (session && session.user) {
                     currentUser = session.user;
@@ -544,7 +732,6 @@
                     showAuthPage();
                 }
             }
-
             if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 profileData = null;
@@ -578,15 +765,12 @@
         }
 
         // ==============================
-        // AUTH — SIGN IN / SIGN UP
-        // This function DIRECTLY transitions to dashboard.
-        // It does NOT wait for onAuthStateChange.
+        // AUTH
         // ==============================
         async function handleAuth(e) {
             e.preventDefault();
             if (_authTransitioning) return;
             _authTransitioning = true;
-
             var email = document.getElementById('authEmail').value.trim();
             var password = document.getElementById('authPassword').value;
             var btn = document.getElementById('authBtn');
@@ -594,86 +778,39 @@
             errEl.textContent = '';
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner" style="margin:0 auto;"></div>';
-
             try {
                 if (isSignUp) {
                     var username = document.getElementById('authName').value.trim();
-                    if (!username) {
-                        errEl.textContent = 'Username is required';
-                        _resetAuthBtn();
-                        _authTransitioning = false;
-                        return;
-                    }
-
+                    if (!username) { errEl.textContent = 'Username is required'; _resetAuthBtn(); _authTransitioning = false; return; }
                     var signUpResult = await supabaseClient.auth.signUp({ email: email, password: password });
-
                     if (signUpResult.error) throw signUpResult.error;
-
-                    // If we got a session back (email confirmation OFF), enter directly
                     if (signUpResult.data.session && signUpResult.data.user) {
                         currentUser = signUpResult.data.user;
-
-                        // Create profile — don't let this block entry
                         try {
-                            await supabaseClient.from('profiles').upsert({
-                                id: currentUser.id,
-                                username: username,
-                                email: email,
-                                display_name: username,
-                                db: { collections: {}, api_keys: [] }
-                            });
+                            await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: username, email: email, display_name: username, db: { collections: {}, api_keys: [] } });
                             await loadProfile();
-                        } catch (profileErr) {
-                            console.warn('[Signup] Profile issue (non-blocking):', profileErr);
-                            // Create a fallback profile in memory so dashboard works
-                            profileData = {
-                                id: currentUser.id,
-                                email: email,
-                                username: username,
-                                display_name: username,
-                                db: { collections: {}, api_keys: [] }
-                            };
+                        } catch (pe) {
+                            profileData = { id: currentUser.id, email: email, username: username, display_name: username, db: { collections: {}, api_keys: [] } };
                             _updateSidebar();
                         }
-
                         showDashboard();
                         showToast('Account created successfully!', 'success');
                         _authTransitioning = false;
                         return;
                     } else {
-                        // Email confirmation required — stay on auth page
                         _resetAuthBtn();
                         showToast('Account created! Check your email to verify.', 'success');
                         _authTransitioning = false;
                         return;
                     }
                 } else {
-                    // SIGN IN — the critical path that was broken
                     var signInResult = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-
                     if (signInResult.error) throw signInResult.error;
-
-                    // ★ THE FIX: Set user and enter dashboard IMMEDIATELY
-                    // Don't wait for onAuthStateChange — it may be slow or not fire
                     currentUser = signInResult.data.user;
-
-                    // Load profile with a hard timeout so we never get stuck
-                    try {
-                        await _loadProfileWithTimeout(6000);
-                    } catch (profileErr) {
-                        console.warn('[SignIn] Profile load timed out or failed (non-blocking):', profileErr);
-                        // Fallback profile in memory
-                        profileData = {
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            username: currentUser.email ? currentUser.email.split('@')[0] : 'user',
-                            display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User',
-                            db: { collections: {}, api_keys: [] }
-                        };
+                    try { await _loadProfileWithTimeout(6000); } catch (pe) {
+                        profileData = { id: currentUser.id, email: currentUser.email, username: currentUser.email ? currentUser.email.split('@')[0] : 'user', display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User', db: { collections: {}, api_keys: [] } };
                         _updateSidebar();
                     }
-
-                    // ENTER DASHBOARD NOW — no more waiting
                     showDashboard();
                     showToast('Welcome back!', 'success');
                     _authTransitioning = false;
@@ -687,75 +824,37 @@
         }
 
         // ==============================
-        // PROFILE — with hard timeout
+        // PROFILE
         // ==============================
         function _loadProfileWithTimeout(ms) {
             return new Promise(function(resolve, reject) {
-                var timer = setTimeout(function() {
-                    reject(new Error('Profile load timeout after ' + ms + 'ms'));
-                }, ms);
-
-                supabaseClient
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', currentUser.id)
-                    .single()
-                    .then(function(result) {
-                        clearTimeout(timer);
-                        if (result.error) throw result.error;
-                        profileData = result.data;
-                        if (!profileData.db) profileData.db = { collections: {}, api_keys: [] };
-                        if (!profileData.db.collections) profileData.db.collections = {};
-                        if (!profileData.db.api_keys) profileData.db.api_keys = [];
-                        _updateSidebar();
-                        resolve(profileData);
-                    })
-                    .catch(function(err) {
-                        clearTimeout(timer);
-                        // Try to create the profile once
-                        supabaseClient.from('profiles').upsert({
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            username: currentUser.email ? currentUser.email.split('@')[0] : 'user',
-                            display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User',
-                            db: { collections: {}, api_keys: [] }
-                        }).then(function(upsertResult) {
-                            if (upsertResult.error) {
-                                reject(upsertResult.error);
-                                return;
-                            }
-                            return supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                        }).then(function(retryResult) {
-                            if (retryResult && retryResult.data) {
-                                profileData = retryResult.data;
-                                if (!profileData.db) profileData.db = { collections: {}, api_keys: [] };
-                                if (!profileData.db.collections) profileData.db.collections = {};
-                                if (!profileData.db.api_keys) profileData.db.api_keys = [];
-                                _updateSidebar();
-                                resolve(profileData);
-                            } else {
-                                reject(new Error('Could not create profile'));
-                            }
-                        }).catch(function(finalErr) {
-                            reject(finalErr);
-                        });
-                    });
+                var timer = setTimeout(function() { reject(new Error('Timeout')); }, ms);
+                supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single().then(function(r) {
+                    clearTimeout(timer);
+                    if (r.error) throw r.error;
+                    profileData = r.data;
+                    if (!profileData.db) profileData.db = { collections: {}, api_keys: [] };
+                    if (!profileData.db.collections) profileData.db.collections = {};
+                    if (!profileData.db.api_keys) profileData.db.api_keys = [];
+                    _updateSidebar();
+                    resolve(profileData);
+                }).catch(function(err) {
+                    clearTimeout(timer);
+                    supabaseClient.from('profiles').upsert({ id: currentUser.id, email: currentUser.email, username: currentUser.email ? currentUser.email.split('@')[0] : 'user', display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User', db: { collections: {}, api_keys: [] } }).then(function(ur) {
+                        if (ur.error) { reject(ur.error); return; }
+                        return supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                    }).then(function(rr) {
+                        if (rr && rr.data) { profileData = rr.data; if (!profileData.db) profileData.db = { collections: {}, api_keys: [] }; if (!profileData.db.collections) profileData.db.collections = {}; if (!profileData.db.api_keys) profileData.db.api_keys = []; _updateSidebar(); resolve(profileData); }
+                        else reject(new Error('No profile'));
+                    }).catch(reject);
+                });
             });
         }
 
         async function loadProfile() {
             if (!currentUser) return;
-            try {
-                await _loadProfileWithTimeout(6000);
-            } catch (err) {
-                console.warn('[loadProfile] failed, using fallback:', err);
-                profileData = {
-                    id: currentUser.id,
-                    email: currentUser.email,
-                    username: currentUser.email ? currentUser.email.split('@')[0] : 'user',
-                    display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User',
-                    db: { collections: {}, api_keys: [] }
-                };
+            try { await _loadProfileWithTimeout(6000); } catch (e) {
+                profileData = { id: currentUser.id, email: currentUser.email, username: currentUser.email ? currentUser.email.split('@')[0] : 'user', display_name: currentUser.email ? currentUser.email.split('@')[0] : 'User', db: { collections: {}, api_keys: [] } };
                 _updateSidebar();
             }
         }
@@ -770,29 +869,18 @@
 
         async function saveProfile() {
             if (!profileData || !currentUser) return;
-            var result = await supabaseClient.from('profiles').update({ db: profileData.db }).eq('id', currentUser.id);
-            if (result.error) {
-                console.error('[SaveProfile] Error:', result.error);
-                showToast('Failed to save data', 'error');
-            }
+            var r = await supabaseClient.from('profiles').update({ db: profileData.db }).eq('id', currentUser.id);
+            if (r.error) { console.error('[SaveProfile]', r.error); showToast('Failed to save data', 'error'); }
         }
 
-        // ==============================
-        // LOGOUT
-        // ==============================
         async function handleLogout() {
             _authTransitioning = true;
-            try { await supabaseClient.auth.signOut(); } catch (e) { /* ignore */ }
-            currentUser = null;
-            profileData = null;
-            currentCollection = null;
+            try { await supabaseClient.auth.signOut(); } catch (e) {}
+            currentUser = null; profileData = null; currentCollection = null;
             _authTransitioning = false;
             showAuthPage();
         }
 
-        // ==============================
-        // AUTH MODE TOGGLE
-        // ==============================
         function toggleAuthMode() {
             isSignUp = !isSignUp;
             document.getElementById('signupNameField').style.display = isSignUp ? 'block' : 'none';
@@ -809,13 +897,14 @@
         function navigateTo(page) {
             document.querySelectorAll('.page-section').forEach(function(s) { s.classList.remove('active'); });
             document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-            var pageMap = { 'collections': 'collectionsPage', 'apikeys': 'apikeysPage', 'docs': 'docsPage' };
-            var el = document.getElementById(pageMap[page]);
+            var map = { 'collections': 'collectionsPage', 'monitor': 'monitorPage', 'apikeys': 'apikeysPage', 'docs': 'docsPage' };
+            var el = document.getElementById(map[page]);
             if (el) el.classList.add('active');
             var navBtn = document.querySelector('.nav-item[data-page="' + page + '"]');
             if (navBtn) navBtn.classList.add('active');
             if (page === 'collections') { currentCollection = null; loadCollections(); }
             if (page === 'apikeys') loadAPIKeys();
+            if (page === 'monitor') renderMonitor();
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('active');
         }
@@ -823,6 +912,330 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        // ==============================
+        // MONITOR PAGE
+        // ==============================
+        function _getByteSize(obj) {
+            try { return new Blob([JSON.stringify(obj)]).size; } catch (e) { return 0; }
+        }
+
+        function _formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            var k = 1024;
+            var sizes = ['B', 'KB', 'MB', 'GB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            i = Math.min(i, sizes.length - 1);
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function _destroyChart(id) {
+            if (_chartInstances[id]) {
+                _chartInstances[id].destroy();
+                delete _chartInstances[id];
+            }
+        }
+
+        function renderMonitor() {
+            if (!profileData) return;
+
+            var collections = profileData.db.collections || {};
+            var apiKeys = profileData.db.api_keys || [];
+            var colNames = Object.keys(collections);
+
+            // Calculate stats
+            var totalDocs = 0;
+            var totalBytes = 0;
+            var docsPerCol = [];
+            var bytesPerCol = [];
+
+            colNames.forEach(function(name) {
+                var docs = collections[name].documents || {};
+                var count = Object.keys(docs).length;
+                var size = _getByteSize(docs);
+                totalDocs += count;
+                totalBytes += size;
+                docsPerCol.push(count);
+                bytesPerCol.push(size);
+            });
+
+            // Add the full profile overhead
+            var totalAccountBytes = _getByteSize(profileData.db);
+            var MAX_ACCOUNT_BYTES = 1048576; // 1 MB imaginary limit for the bar
+
+            // Render stat cards
+            var statsHTML = '' +
+                '<div class="card stat-card purple">' +
+                    '<div class="stat-icon purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>' +
+                    '<div class="stat-value">' + colNames.length + '</div>' +
+                    '<div class="stat-label">Collections</div>' +
+                '</div>' +
+                '<div class="card stat-card cyan">' +
+                    '<div class="stat-icon cyan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+                    '<div class="stat-value">' + totalDocs + '</div>' +
+                    '<div class="stat-label">Total Documents</div>' +
+                '</div>' +
+                '<div class="card stat-card amber">' +
+                    '<div class="stat-icon amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>' +
+                    '<div class="stat-value">' + _formatBytes(totalAccountBytes) + '</div>' +
+                    '<div class="stat-label">Total Storage Used</div>' +
+                '</div>' +
+                '<div class="card stat-card emerald">' +
+                    '<div class="stat-icon emerald"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>' +
+                    '<div class="stat-value">' + apiKeys.length + '</div>' +
+                    '<div class="stat-label">API Keys</div>' +
+                '</div>';
+
+            document.getElementById('monitorStats').innerHTML = statsHTML;
+
+            // Charts area
+            var chartsArea = document.getElementById('monitorChartsArea');
+
+            if (colNames.length === 0) {
+                chartsArea.innerHTML = '<div class="card monitor-empty">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>' +
+                    '<p style="font-size:1rem; font-weight:600; margin-bottom:0.3rem;">No data yet</p>' +
+                    '<p style="font-size:0.82rem;">Create collections and add documents to see analytics here.</p></div>';
+                return;
+            }
+
+            var labels = colNames;
+            var bgColors = labels.map(function(_, i) { return CHART_COLORS[i % CHART_COLORS.length]; });
+            var bgColorsAlpha = labels.map(function(_, i) { return CHART_COLORS_ALPHA[i % CHART_COLORS_ALPHA.length]; });
+            var borderColors = bgColors.slice();
+
+            chartsArea.innerHTML = '' +
+                '<div class="monitor-charts">' +
+                    '<div class="card chart-card">' +
+                        '<div class="chart-card-title">Documents per Collection</div>' +
+                        '<div class="chart-card-sub">Distribution of documents across your collections</div>' +
+                        '<div class="chart-wrap doughnut-wrap"><canvas id="chartDocsPerCol"></canvas></div>' +
+                    '</div>' +
+                    '<div class="card chart-card">' +
+                        '<div class="chart-card-title">Storage per Collection</div>' +
+                        '<div class="chart-card-sub">How much space each collection uses</div>' +
+                        '<div class="chart-wrap"><canvas id="chartStoragePerCol"></canvas></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="card chart-card monitor-full-chart">' +
+                    '<div class="chart-card-title">Collection Comparison</div>' +
+                    '<div class="chart-card-sub">Side-by-side document count and storage size</div>' +
+                    '<div class="chart-wrap" style="height:280px;"><canvas id="chartComparison"></canvas></div>' +
+                '</div>' +
+                '<div class="card chart-card" style="padding:1.25rem 1.5rem;">' +
+                    '<div class="chart-card-title">Account Storage</div>' +
+                    '<div class="chart-card-sub">Total data stored in your account</div>' +
+                    '<div class="storage-bar-wrap">' +
+                        '<div class="storage-bar-label"><span>' + _formatBytes(totalAccountBytes) + ' used</span><span>1 MB limit</span></div>' +
+                        '<div class="storage-bar-track"><div class="storage-bar-fill" id="storageBarFill" style="width:0%;"></div></div>' +
+                    '</div>' +
+                '</div>';
+
+            // Animate storage bar
+            setTimeout(function() {
+                var pct = Math.min((totalAccountBytes / MAX_ACCOUNT_BYTES) * 100, 100);
+                document.getElementById('storageBarFill').style.width = pct + '%';
+            }, 50);
+
+            // --- Chart 1: Doughnut - Docs per Collection ---
+            _destroyChart('chartDocsPerCol');
+            var ctx1 = document.getElementById('chartDocsPerCol').getContext('2d');
+            _chartInstances['chartDocsPerCol'] = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: docsPerCol,
+                        backgroundColor: bgColors,
+                        borderColor: 'rgba(18, 18, 32, 0.8)',
+                        borderWidth: 3,
+                        hoverBorderColor: '#fff',
+                        hoverBorderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '62%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#9898b0',
+                                padding: 14,
+                                usePointStyle: true,
+                                pointStyleWidth: 10,
+                                font: { family: 'Inter', size: 12, weight: '500' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(18, 18, 32, 0.95)',
+                            titleColor: '#e8e8f0',
+                            bodyColor: '#9898b0',
+                            borderColor: 'rgba(139, 92, 246, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12,
+                            titleFont: { family: 'Inter', weight: '700' },
+                            bodyFont: { family: 'Inter' },
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                    var pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                                    return ' ' + ctx.label + ': ' + ctx.parsed + ' docs (' + pct + '%)';
+                                }
+                            }
+                        }
+                    },
+                    animation: { animateRotate: true, duration: 900, easing: 'easeOutQuart' }
+                }
+            });
+
+            // --- Chart 2: Bar - Storage per Collection ---
+            _destroyChart('chartStoragePerCol');
+            var ctx2 = document.getElementById('chartStoragePerCol').getContext('2d');
+            _chartInstances['chartStoragePerCol'] = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Storage (bytes)',
+                        data: bytesPerCol,
+                        backgroundColor: bgColors.map(function(c) { return c + '99'; }),
+                        borderColor: borderColors,
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        hoverBackgroundColor: bgColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(18, 18, 32, 0.95)',
+                            titleColor: '#e8e8f0',
+                            bodyColor: '#9898b0',
+                            borderColor: 'rgba(139, 92, 246, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12,
+                            titleFont: { family: 'Inter', weight: '700' },
+                            bodyFont: { family: 'Inter' },
+                            callbacks: {
+                                label: function(ctx) { return ' ' + _formatBytes(ctx.parsed.x); }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(139, 92, 246, 0.06)', drawBorder: false },
+                            ticks: { color: '#55556a', font: { family: 'JetBrains Mono', size: 11 }, callback: function(v) { return _formatBytes(v); } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#9898b0', font: { family: 'Inter', size: 12, weight: '500' }, padding: 8 }
+                        }
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
+                }
+            });
+
+            // --- Chart 3: Grouped Bar - Comparison ---
+            _destroyChart('chartComparison');
+            var ctx3 = document.getElementById('chartComparison').getContext('2d');
+            _chartInstances['chartComparison'] = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Documents',
+                            data: docsPerCol,
+                            backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                            borderColor: '#8b5cf6',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            yAxisID: 'yDocs',
+                            hoverBackgroundColor: '#8b5cf6'
+                        },
+                        {
+                            label: 'Storage (KB)',
+                            data: bytesPerCol.map(function(b) { return parseFloat((b / 1024).toFixed(3)); }),
+                            backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            yAxisID: 'yStorage',
+                            hoverBackgroundColor: '#06b6d4'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                color: '#9898b0',
+                                padding: 16,
+                                usePointStyle: true,
+                                pointStyleWidth: 10,
+                                font: { family: 'Inter', size: 12, weight: '500' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(18, 18, 32, 0.95)',
+                            titleColor: '#e8e8f0',
+                            bodyColor: '#9898b0',
+                            borderColor: 'rgba(139, 92, 246, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12,
+                            titleFont: { family: 'Inter', weight: '700' },
+                            bodyFont: { family: 'Inter' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#9898b0', font: { family: 'Inter', size: 12, weight: '500' } }
+                        },
+                        yDocs: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: 'rgba(139, 92, 246, 0.06)', drawBorder: false },
+                            ticks: { color: '#8b5cf6', font: { family: 'JetBrains Mono', size: 11 }, stepSize: 1 },
+                            title: { display: true, text: 'Documents', color: '#8b5cf6', font: { family: 'Inter', size: 12, weight: '600' } }
+                        },
+                        yStorage: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { color: '#06b6d4', font: { family: 'JetBrains Mono', size: 11 }, callback: function(v) { return v + ' KB'; } },
+                            title: { display: true, text: 'Storage (KB)', color: '#06b6d4', font: { family: 'Inter', size: 12, weight: '600' } }
+                        }
+                    },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        function refreshMonitor() {
+            var btn = document.getElementById('monitorRefreshBtn');
+            btn.classList.add('spinning');
+            setTimeout(function() { btn.classList.remove('spinning'); }, 500);
+            renderMonitor();
+            showToast('Monitor data refreshed', 'info');
         }
 
         // ==============================
@@ -839,12 +1252,9 @@
                 var docCount = col.documents ? Object.keys(col.documents).length : 0;
                 var created = col.created_at ? new Date(col.created_at).toLocaleDateString() : 'N/A';
                 html += '<div class="card card-glow collection-card" onclick="openCollectionDetail(\'' + escapeAttr(name) + '\')">' +
-                    '<button class="collection-delete" onclick="event.stopPropagation(); quickDeleteCollection(\'' + escapeAttr(name) + '\')" title="Delete">' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+                    '<button class="collection-delete" onclick="event.stopPropagation(); quickDeleteCollection(\'' + escapeAttr(name) + '\')" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
                     '<div class="collection-name">' + escapeHtml(name) + '</div>' +
-                    '<div class="collection-meta">' +
-                    '<span class="collection-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + docCount + ' docs</span>' +
-                    '<span class="collection-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' + created + '</span></div></div>';
+                    '<div class="collection-meta"><span class="collection-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + docCount + ' docs</span><span class="collection-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' + created + '</span></div></div>';
             });
             html += '<div class="new-collection-card" onclick="openCreateCollectionModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>New Collection</span></div>';
             grid.innerHTML = html;
@@ -864,9 +1274,7 @@
             if (profileData.db.collections[name]) { showToast('Collection already exists', 'error'); return; }
             if (!/^[a-zA-Z0-9_\-]+$/.test(name)) { showToast('Only letters, numbers, _ and - allowed', 'error'); return; }
             profileData.db.collections[name] = { created_at: new Date().toISOString(), documents: {} };
-            await saveProfile();
-            closeModal();
-            loadCollections();
+            await saveProfile(); closeModal(); loadCollections();
             showToast('Collection "' + name + '" created', 'success');
         }
 
@@ -881,10 +1289,7 @@
 
         async function deleteCollection(name) {
             delete profileData.db.collections[name];
-            await saveProfile();
-            closeModal();
-            currentCollection = null;
-            navigateTo('collections');
+            await saveProfile(); closeModal(); currentCollection = null; navigateTo('collections');
             showToast('Collection deleted', 'success');
         }
 
@@ -922,8 +1327,7 @@
                 html += '<tr><td><span class="doc-id">' + escapeHtml(id) + '</span></td><td><span class="doc-preview">' + escapeHtml(truncated) + '</span></td><td style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;">' + updated + '</td><td><div class="doc-actions">' +
                     '<button class="btn-icon" onclick="viewDocument(\'' + escapeAttr(id) + '\')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>' +
                     '<button class="btn-icon" onclick="editDocument(\'' + escapeAttr(id) + '\')" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-                    '<button class="btn-icon danger" onclick="deleteDocument(\'' + escapeAttr(id) + '\')" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
-                    '</div></td></tr>';
+                    '<button class="btn-icon danger" onclick="deleteDocument(\'' + escapeAttr(id) + '\')" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td></tr>';
             });
             html += '</tbody></table></div>';
             container.innerHTML = html;
@@ -940,18 +1344,11 @@
         async function saveNewDoc() {
             var raw = document.getElementById('newDocJson').value.trim();
             if (!raw) { showToast('JSON data is required', 'error'); return; }
-            var parsed;
-            try { parsed = JSON.parse(raw); } catch (e) { showToast('Invalid JSON: ' + e.message, 'error'); return; }
-            var id = generateId();
-            var col = profileData.db.collections[currentCollection];
+            var parsed; try { parsed = JSON.parse(raw); } catch (e) { showToast('Invalid JSON: ' + e.message, 'error'); return; }
+            var id = generateId(); var col = profileData.db.collections[currentCollection];
             if (!col.documents) col.documents = {};
-            parsed._id = id;
-            parsed.created_at = new Date().toISOString();
-            parsed.updated_at = new Date().toISOString();
-            col.documents[id] = parsed;
-            await saveProfile();
-            closeModal();
-            loadDocuments();
+            parsed._id = id; parsed.created_at = new Date().toISOString(); parsed.updated_at = new Date().toISOString();
+            col.documents[id] = parsed; await saveProfile(); closeModal(); loadDocuments();
             showToast('Document added', 'success');
         }
 
@@ -968,11 +1365,8 @@
         function editDocument(id) {
             var col = profileData.db.collections[currentCollection];
             if (!col || !col.documents[id]) return;
-            var doc = col.documents[id];
-            var editable = Object.assign({}, doc);
-            delete editable._id;
-            delete editable.created_at;
-            delete editable.updated_at;
+            var doc = col.documents[id]; var editable = Object.assign({}, doc);
+            delete editable._id; delete editable.created_at; delete editable.updated_at;
             document.getElementById('modalTitle').textContent = 'Edit Document: ' + id;
             document.getElementById('modalBody').innerHTML = '<div class="form-group"><label class="label">JSON Data</label><textarea class="json-editor" id="editDocJson" style="min-height:250px;">' + escapeHtml(JSON.stringify(editable, null, 2)) + '</textarea></div>';
             document.getElementById('modalFooter').innerHTML = '<button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveEditDoc(\'' + escapeAttr(id) + '\')">Save Changes</button>';
@@ -982,17 +1376,10 @@
         async function saveEditDoc(id) {
             var raw = document.getElementById('editDocJson').value.trim();
             if (!raw) { showToast('JSON data is required', 'error'); return; }
-            var parsed;
-            try { parsed = JSON.parse(raw); } catch (e) { showToast('Invalid JSON: ' + e.message, 'error'); return; }
-            var col = profileData.db.collections[currentCollection];
-            var existing = col.documents[id];
-            parsed._id = id;
-            parsed.created_at = existing.created_at;
-            parsed.updated_at = new Date().toISOString();
-            col.documents[id] = parsed;
-            await saveProfile();
-            closeModal();
-            loadDocuments();
+            var parsed; try { parsed = JSON.parse(raw); } catch (e) { showToast('Invalid JSON: ' + e.message, 'error'); return; }
+            var col = profileData.db.collections[currentCollection]; var existing = col.documents[id];
+            parsed._id = id; parsed.created_at = existing.created_at; parsed.updated_at = new Date().toISOString();
+            col.documents[id] = parsed; await saveProfile(); closeModal(); loadDocuments();
             showToast('Document updated', 'success');
         }
 
@@ -1006,9 +1393,7 @@
         async function confirmDeleteDoc(id) {
             var col = profileData.db.collections[currentCollection];
             if (col && col.documents[id]) { delete col.documents[id]; await saveProfile(); }
-            closeModal();
-            loadDocuments();
-            showToast('Document deleted', 'success');
+            closeModal(); loadDocuments(); showToast('Document deleted', 'success');
         }
 
         // ==============================
@@ -1028,8 +1413,7 @@
                 var created = k.created_at ? new Date(k.created_at).toLocaleDateString() : 'N/A';
                 html += '<div class="card key-card"><div class="key-info"><div class="key-name">' + escapeHtml(k.name) + '</div><div class="key-value"><code>' + escapeHtml(masked) + '</code></div><div class="key-date">Created ' + created + '</div></div><div class="key-actions">' +
                     '<button class="btn-icon" onclick="copyToClipboard(\'' + escapeAttr(k.key) + '\')" title="Copy Key"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
-                    '<button class="btn-icon danger" onclick="deleteAPIKey(' + i + ')" title="Delete Key"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
-                    '</div></div>';
+                    '<button class="btn-icon danger" onclick="deleteAPIKey(' + i + ')" title="Delete Key"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div>';
             });
             container.innerHTML = html;
         }
@@ -1051,8 +1435,7 @@
             document.getElementById('modalTitle').textContent = 'Key Generated';
             document.getElementById('modalBody').innerHTML = '<div class="form-group"><label class="label">Your API Key (copy now — won\'t be shown again)</label><div style="display:flex; gap:0.5rem;"><input type="text" class="form-input" id="newKeyFull" value="' + escapeHtml(key) + '" readonly style="font-family:JetBrains Mono,monospace; font-size:0.8rem;"><button class="btn btn-primary btn-sm" onclick="copyToClipboard(document.getElementById(\'newKeyFull\').value)" style="white-space:nowrap;">Copy</button></div></div>';
             document.getElementById('modalFooter').innerHTML = '<button class="btn btn-primary btn-sm" onclick="closeModal(); loadAPIKeys();">Done</button>';
-            loadAPIKeys();
-            showToast('API key generated', 'success');
+            loadAPIKeys(); showToast('API key generated', 'success');
         }
 
         async function deleteAPIKey(index) {
@@ -1065,9 +1448,7 @@
 
         async function confirmDeleteKey(index) {
             profileData.db.api_keys.splice(index, 1);
-            await saveProfile();
-            closeModal();
-            loadAPIKeys();
+            await saveProfile(); closeModal(); loadAPIKeys();
             showToast('API key deleted', 'success');
         }
 
@@ -1099,30 +1480,13 @@
         // UTILITIES
         // ==============================
         function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
-
-        function escapeHtml(str) {
-            if (typeof str !== 'string') str = String(str);
-            var d = document.createElement('div');
-            d.appendChild(document.createTextNode(str));
-            return d.innerHTML;
-        }
-
-        function escapeAttr(str) {
-            if (typeof str !== 'string') str = String(str);
-            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        }
+        function escapeHtml(str) { if (typeof str !== 'string') str = String(str); var d = document.createElement('div'); d.appendChild(document.createTextNode(str)); return d.innerHTML; }
+        function escapeAttr(str) { if (typeof str !== 'string') str = String(str); return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
         function copyToClipboard(text) {
-            var temp = document.createElement('textarea');
-            temp.innerHTML = text;
-            var decoded = temp.value;
+            var temp = document.createElement('textarea'); temp.innerHTML = text; var decoded = temp.value;
             navigator.clipboard.writeText(decoded).then(function() { showToast('Copied to clipboard', 'success'); }).catch(function() {
-                var el = document.createElement('textarea');
-                el.value = decoded;
-                el.style.position = 'fixed';
-                el.style.opacity = '0';
-                document.body.appendChild(el);
-                el.select();
+                var el = document.createElement('textarea'); el.value = decoded; el.style.position = 'fixed'; el.style.opacity = '0'; document.body.appendChild(el); el.select();
                 try { document.execCommand('copy'); showToast('Copied to clipboard', 'success'); } catch (e) { showToast('Failed to copy', 'error'); }
                 document.body.removeChild(el);
             });
@@ -1138,7 +1502,6 @@
                 .replace(/: (null)/g, ': <span class="jnull">$1</span>');
         }
 
-        // Escape key closes modal
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
     </script>
 </body>
