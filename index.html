@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Epsilon DB</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -1782,7 +1783,8 @@
                             </svg>
                             <p style="font-weight:600;margin-bottom:.4rem;">No output yet</p>
                             <p style="font-size:.78rem;">Try: <code>st {-n collection} = "test"</code><br>or type
-                                <code>help</code> for all commands</p>
+                                <code>help</code> for all commands
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1955,7 +1957,788 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
+    <style>
+        /* --- Floating Button --- */
+        #epsilon-ai-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            background: rgba(13, 10, 25, 0.85);
+            backdrop-filter: blur(16px);
+            color: #c084fc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 24px rgba(168, 85, 247, 0.35), 0 4px 16px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background 0.3s ease;
+        }
 
+        #epsilon-ai-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 36px rgba(168, 85, 247, 0.55), 0 6px 24px rgba(0, 0, 0, 0.6);
+            background: rgba(168, 85, 247, 0.25);
+        }
+
+        #epsilon-ai-btn:active {
+            transform: scale(0.95);
+        }
+
+        #epsilon-ai-btn svg {
+            width: 22px;
+            height: 22px;
+            pointer-events: none;
+        }
+
+        /* Pulse ring animation */
+        #epsilon-ai-btn::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid rgba(168, 85, 247, 0.4);
+            animation: ai-pulse 2.5s ease-out infinite;
+        }
+
+        @keyframes ai-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            70% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+
+        /* --- Modal Overlay --- */
+        #epsilon-ai-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        #epsilon-ai-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* --- Chat Panel --- */
+        #epsilon-ai-panel {
+            width: 100%;
+            max-width: 400px;
+            max-height: 560px;
+            border-radius: 1.25rem;
+            background: rgba(13, 10, 25, 0.92);
+            backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px rgba(168, 85, 247, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(20px) scale(0.96);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #epsilon-ai-overlay.open #epsilon-ai-panel {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Header */
+        .ai-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+            flex-shrink: 0;
+        }
+
+        .ai-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .ai-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #a855f7;
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+            animation: ai-dot-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes ai-dot-glow {
+            from {
+                box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+            }
+
+            to {
+                box-shadow: 0 0 14px rgba(168, 85, 247, 0.8);
+            }
+        }
+
+        .ai-header h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #f3e8ff;
+        }
+
+        .ai-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            background: transparent;
+            color: #c084fc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .ai-close:hover {
+            background: rgba(168, 85, 247, 0.2);
+            color: #fff;
+        }
+
+        .ai-close svg {
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+        }
+
+        /* Messages Area */
+        .ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
+        }
+
+        .ai-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .ai-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .ai-messages::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.3);
+            border-radius: 4px;
+        }
+
+        .ai-msg {
+            max-width: 85%;
+            padding: 0.7rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            word-break: break-word;
+            animation: msg-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes msg-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-msg.bot {
+            background-color: rgba(13, 10, 25, 0.92);
+            color: #ffffff;
+            border: 1px rgba(13, 10, 25, 0.92);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin: 8px 0;
+            max-width: 99%;
+            display: inline-block;
+            word-wrap: break-word;
+        }
+
+        .ai-msg.bot ul,
+        .ai-msg.bot ol {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+
+        .ai-msg.bot p {
+            margin: 4px 0;
+        }
+
+        .ai-msg.bot h1,
+        .ai-msg.bot h2,
+        .ai-msg.bot h3 {
+            margin: 6px 0;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .ai-msg.user {
+            align-self: flex-end;
+            background: #a855f7;
+            color: #fff;
+            border-bottom-right-radius: 0.3rem;
+        }
+
+        .ai-msg.typing span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #c084fc;
+            margin: 0 2px;
+            animation: typing-bounce 1.2s ease-in-out infinite;
+        }
+
+        .ai-msg.typing span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .ai-msg.typing span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes typing-bounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+
+            30% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
+        }
+
+        /* Input Area */
+        .ai-input-area {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.85rem 1.25rem;
+            border-top: 1px solid rgba(168, 85, 247, 0.15);
+            flex-shrink: 0;
+        }
+
+        .ai-input {
+            flex: 1;
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 0.75rem;
+            padding: 0.6rem 1rem;
+            color: #f3e8ff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .ai-input::placeholder {
+            color: rgba(192, 132, 252, 0.4);
+        }
+
+        .ai-input:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+        }
+
+        .ai-send {
+            width: 38px;
+            height: 38px;
+            border-radius: 0.75rem;
+            border: none;
+            background: #a855f7;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.15s;
+            flex-shrink: 0;
+        }
+
+        .ai-send:hover {
+            background: #9333ea;
+        }
+
+        .ai-send:active {
+            transform: scale(0.92);
+        }
+
+        .ai-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .ai-send svg {
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+        }
+
+        /* Context badge */
+        .ai-context-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.5rem;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+        }
+
+        .ai-context-badge .ai-ctx-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            #epsilon-ai-overlay {
+                padding: 0.75rem;
+                align-items: flex-end;
+            }
+
+            #epsilon-ai-panel {
+                max-height: 75vh;
+                border-radius: 1.25rem 1.25rem 0 0;
+            }
+        }
+    </style>
+
+    <!-- Floating Button -->
+    <button id="epsilon-ai-btn" aria-label="Open AI Assistant">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z">
+            </path>
+        </svg>
+    </button>
+
+    <!-- Chat Modal -->
+    <div id="epsilon-ai-overlay">
+        <div id="epsilon-ai-panel">
+            <div class="ai-header">
+                <div class="ai-header-left">
+                    <div class="ai-dot"></div>
+                    <h3>Epsilon AI <span class="ai-context-badge" id="aiCtxBadge" style="display:none;"><span
+                                class="ai-ctx-dot"></span>DB Connected</span></h3>
+                </div>
+                <button class="ai-close" id="epsilon-ai-close" aria-label="Close chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="ai-messages" id="ai-messages"></div>
+            <div class="ai-input-area">
+                <input type="text" class="ai-input" id="ai-input" placeholder="Ask me anything..." autocomplete="off">
+                <button class="ai-send" id="ai-send" aria-label="Send message">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+
+            /* ============================================================
+             *  DYNAMIC SYSTEM PROMPT BUILDER
+             *  This function reads your live site data and injects it
+             *  into the system prompt so the AI knows your current state.
+             * ============================================================ */
+            function buildSystemPrompt() {
+                /* --- Static knowledge base (always included) --- */
+                var staticKnowledge = `You are Epsilon AI, built into the Epsilon Hub website with a purple and black theme. You are helpful, concise, and friendly. 
+
+You know about Epsilon's ecosystem of free and open-source apps:
+- Epsilon AI (basic ai that can make images, respond and code) | Theme: pink
+- Epsilon Azure (BMS, business to business marketplace) | Theme: blue
+- Epsilon Heckle (gaming library/website, game engine for children) | Theme: red
+- Epsilon Editz (editing tools, digital tools for artists and designers) | Theme: yellow
+- Epsilon Motor (automobile community for cars, planes, ships, trucks and bikes) | Theme: grey
+- Epsilon Neote (programming language, prototype js framework) | Theme: purple
+- Epsilon Sport (fitness tracker, sport lovers community) | Theme: orange
+- Epsilon Panel (web domain agency) | Theme: purple
+- Epsilon Basic (basic tools for kids/adults, library for 3d/2d designing tools for games, car interiors etc) | Theme: lightgray
+- Epsilon Learn (free learning platform) | Theme: green
+
+Client Projects:
+- NTK Services (movers/logistics)
+- Zerah (stationary/clothing)
+
+The Epsilon Team (Age bracket: 12-14 years old):
+- Warren Adrian (14 yrs old) - Owner. Built Epsilon on June 6, 2024, when he was 12.
+- Glenn Njoroge - Vital asset in training, responsible for Epsilon Panel.
+- Dylan Gikundi - Responsible for Epsilon Apple apps.
+- Ethan Gitimu - Responsible for Epsilon Android apps and Epsilon Learn.
+- Philip Hinga - Responsible for Epsilon Sport.
+- Victor Mwaura - Vital asset still in training.
+- Jaydon Kuria - Responsible for Epsilon Heckle.
+- Jayden Mwangi - Responsible for Epsilon Azure.
+- Casey Mwenda - Responsible for Epsilon Editz.
+- Jabali Mwaniki - Responsible for Epsilon Basic.
+
+Rules: Keep answers short and to the point. Always use clear examples and references to help the user understand. Format your responses beautifully using Markdown (bold text, lists, and headers where necessary). Do not make up information about features that don't exist or are not explicitly mentioned to you.`;
+
+                /* --- Dynamic data section (injected at runtime) --- */
+                var dynamicData = '\n\n--- LIVE DATABASE CONTEXT (read-only snapshot, current as of this message) ---\n';
+
+                // Current user info
+                if (typeof currentUser !== 'undefined' && currentUser) {
+                    dynamicData += 'CURRENT USER:\n';
+                    dynamicData += '- User ID: ' + (currentUser.id || 'unknown') + '\n';
+                    dynamicData += '- Email: ' + (currentUser.email || 'unknown') + '\n';
+                    dynamicData += '- Username: ' + (typeof profileData !== 'undefined' && profileData ? (profileData.username || profileData.display_name || 'unknown') : 'unknown') + '\n';
+                    dynamicData += '- Display Name: ' + (typeof profileData !== 'undefined' && profileData ? (profileData.display_name || 'unknown') : 'unknown') + '\n\n';
+                } else {
+                    dynamicData += 'CURRENT USER: Not logged in (visitor mode)\n\n';
+                }
+
+                // Collections and their documents
+                if (typeof profileData !== 'undefined' && profileData && profileData.db && profileData.db.collections) {
+                    var cols = profileData.db.collections;
+                    var colKeys = Object.keys(cols);
+                    dynamicData += 'COLLECTIONS (' + colKeys.length + ' total):\n';
+
+                    if (colKeys.length === 0) {
+                        dynamicData += '- (no collections created yet)\n';
+                    } else {
+                        for (var i = 0; i < colKeys.length; i++) {
+                            var colName = colKeys[i];
+                            var colData = cols[colName];
+                            var docCount = 0;
+                            var docIds = [];
+
+                            // Count documents and collect IDs
+                            if (colData && colData.documents) {
+                                if (Array.isArray(colData.documents)) {
+                                    docCount = colData.documents.length;
+                                    for (var d = 0; d < colData.documents.length; d++) {
+                                        if (colData.documents[d] && colData.documents[d].id) {
+                                            docIds.push(colData.documents[d].id);
+                                        }
+                                    }
+                                } else if (typeof colData.documents === 'object') {
+                                    var docKeys = Object.keys(colData.documents);
+                                    docCount = docKeys.length;
+                                    docIds = docKeys.slice(0, 10); // cap at 10 IDs shown
+                                }
+                            }
+
+                            dynamicData += '- "' + colName + '": ' + docCount + ' document(s)';
+                            if (docIds.length > 0) {
+                                dynamicData += ' | IDs: ' + docIds.join(', ');
+                            }
+                            dynamicData += '\n';
+
+                            // Show first few document previews (field names + a sample value)
+                            if (colData && colData.documents) {
+                                var docsArr = Array.isArray(colData.documents) ? colData.documents : Object.values(colData.documents);
+                                var previewCount = Math.min(docsArr.length, 3);
+                                for (var p = 0; p < previewCount; p++) {
+                                    var doc = docsArr[p];
+                                    if (doc && typeof doc === 'object') {
+                                        var fields = Object.keys(doc).filter(function (k) { return k !== 'id'; });
+                                        if (fields.length > 0) {
+                                            dynamicData += '  Doc ' + (p + 1) + ' (' + (doc.id || 'no-id') + '): ';
+                                            var fieldSnippets = fields.slice(0, 4).map(function (f) {
+                                                var val = doc[f];
+                                                var valStr = typeof val === 'string' ? val : JSON.stringify(val);
+                                                if (valStr && valStr.length > 50) valStr = valStr.substring(0, 50) + '...';
+                                                return f + '=' + valStr;
+                                            });
+                                            dynamicData += fieldSnippets.join(', ');
+                                            if (fields.length > 4) dynamicData += ' ...';
+                                            dynamicData += '\n';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    dynamicData += '\n';
+                } else {
+                    dynamicData += 'COLLECTIONS: Unable to read (profile not loaded or no db data)\n\n';
+                }
+
+                // API Keys (names only, never the actual secret values)
+                if (typeof profileData !== 'undefined' && profileData && profileData.db && profileData.db.api_keys) {
+                    var keys = profileData.db.api_keys;
+                    dynamicData += 'API KEYS (' + (Array.isArray(keys) ? keys.length : 0) + ' total):\n';
+
+                    if (!Array.isArray(keys) || keys.length === 0) {
+                        dynamicData += '- (no API keys generated yet)\n';
+                    } else {
+                        for (var k = 0; k < keys.length; k++) {
+                            var key = keys[k];
+                            var keyName = (key && key.name) ? key.name : 'unnamed';
+                            var keyPrefix = (key && key.key) ? key.key.substring(0, 12) + '...' : 'unknown';
+                            var keyCreated = (key && key.created_at) ? key.created_at : 'unknown';
+                            dynamicData += '- Name: "' + keyName + '" | Prefix: ' + keyPrefix + ' | Created: ' + keyCreated + '\n';
+                        }
+                    }
+                    dynamicData += '\n';
+                } else {
+                    dynamicData += 'API KEYS: Unable to read\n\n';
+                }
+
+                // Current page / navigation state
+                if (typeof currentCollection !== 'undefined' && currentCollection) {
+                    dynamicData += 'CURRENT VIEW: User is viewing collection "' + currentCollection + '"\n';
+                } else {
+                    dynamicData += 'CURRENT VIEW: User is on the main dashboard\n';
+                }
+
+                // Supabase project reference (public info only)
+                dynamicData += '\nSUPABASE CONFIG:\n';
+                dynamicData += '- Project URL: https://gfsqzkyviivhvyqadpeg.supabase.co\n';
+                dynamicData += '- Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (truncated for safety)\n';
+                dynamicData += '- Profile Table: "profiles"\n';
+
+                dynamicData += '\n--- END LIVE CONTEXT ---\n\n';
+                dynamicData += 'IMPORTANT: Use the LIVE DATABASE CONTEXT above to answer questions about the user\'s actual collections, documents, API keys, and account. When the user asks about their data, reference the real values shown above. If they ask you to read a specific document, tell them what fields and values you can see from the snapshot. Never reveal full API key secrets — only the prefix is safe to show.';
+
+                return staticKnowledge + dynamicData;
+            }
+
+            /* ====== DOM REFS ====== */
+            var btn = document.getElementById('epsilon-ai-btn');
+            var overlay = document.getElementById('epsilon-ai-overlay');
+            var closeBtn = document.getElementById('epsilon-ai-close');
+            var messages = document.getElementById('ai-messages');
+            var input = document.getElementById('ai-input');
+            var sendBtn = document.getElementById('ai-send');
+            var ctxBadge = document.getElementById('aiCtxBadge');
+
+            var conversationHistory = [];
+            var isWaiting = false;
+            var hasGreeted = false;
+
+            /* Show "DB Connected" badge if profile data exists */
+            function updateCtxBadge() {
+                if (typeof profileData !== 'undefined' && profileData && profileData.db) {
+                    ctxBadge.style.display = 'inline-flex';
+                } else {
+                    ctxBadge.style.display = 'none';
+                }
+            }
+
+            /* ====== OPEN / CLOSE ====== */
+            function openChat() {
+                overlay.classList.add('open');
+                updateCtxBadge();
+
+                // Rebuild system prompt with fresh data every time chat opens
+                conversationHistory = [
+                    { role: 'system', content: buildSystemPrompt() }
+                ];
+
+                if (!hasGreeted) {
+                    var userName = (typeof profileData !== 'undefined' && profileData && profileData.display_name)
+                        ? profileData.display_name
+                        : (typeof currentUser !== 'undefined' && currentUser && currentUser.email
+                            ? currentUser.email.split('@')[0]
+                            : null);
+
+                    var colCount = 0;
+                    if (typeof profileData !== 'undefined' && profileData && profileData.db && profileData.db.collections) {
+                        colCount = Object.keys(profileData.db.collections).length;
+                    }
+
+                    var greeting = "Hey! I'm **Epsilon AI**.";
+                    if (userName) greeting += " Welcome, **" + userName + "**.";
+                    greeting += " Ask me anything about the ecosystem";
+                    if (colCount > 0) greeting += " or your " + colCount + " collection" + (colCount > 1 ? 's' : '');
+                    greeting += ".";
+
+                    addBotMessage(greeting);
+                    hasGreeted = true;
+                }
+
+                setTimeout(function () { input.focus(); }, 300);
+            }
+
+            function closeChat() {
+                overlay.classList.remove('open');
+            }
+
+            btn.addEventListener('click', openChat);
+            closeBtn.addEventListener('click', closeChat);
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) closeChat();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && overlay.classList.contains('open')) closeChat();
+            });
+
+            /* ====== MESSAGE RENDERING ====== */
+            function addBotMessage(markdownText) {
+                var div = document.createElement('div');
+                div.className = 'ai-msg bot';
+
+                if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+                    div.innerHTML = marked.parse(markdownText);
+                } else {
+                    div.textContent = markdownText;
+                }
+
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function addUserMessage(text) {
+                var div = document.createElement('div');
+                div.className = 'ai-msg user';
+                div.textContent = text;
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            var extraStyle = document.createElement('style');
+            extraStyle.innerHTML = '.ai-msg.bot ul, .ai-msg.bot ol { margin: 5px 0; padding-left: 20px; } .ai-msg.bot p { margin: 4px 0; } .ai-msg.bot h1, .ai-msg.bot h2, .ai-msg.bot h3 { margin: 6px 0; font-size: 1.1em; }';
+            document.head.appendChild(extraStyle);
+
+            function showTyping() {
+                var div = document.createElement('div');
+                div.className = 'ai-msg bot typing';
+                div.id = 'ai-typing';
+                div.innerHTML = '<span></span><span></span><span></span>';
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function removeTyping() {
+                var el = document.getElementById('ai-typing');
+                if (el) el.remove();
+            }
+
+            /* ====== SEND MESSAGE ====== */
+            async function sendMessage() {
+                var text = input.value.trim();
+                if (!text || isWaiting) return;
+
+                isWaiting = true;
+                sendBtn.disabled = true;
+                input.value = '';
+
+                addUserMessage(text);
+
+                // Refresh the system prompt with latest data before sending
+                conversationHistory[0] = { role: 'system', content: buildSystemPrompt() };
+                conversationHistory.push({ role: 'user', content: text });
+
+                showTyping();
+
+                try {
+                    var promptContext = conversationHistory
+                        .map(function (msg) {
+                            if (msg.role === 'system') return 'System instructions: ' + msg.content;
+                            return (msg.role === 'user' ? 'User' : 'Assistant') + ': ' + msg.content;
+                        })
+                        .join('\n');
+
+                    var encodedPrompt = encodeURIComponent(promptContext + '\nAssistant:');
+                    var res = await fetch('https://text.pollinations.ai/' + encodedPrompt + '?model=openai&cache=false');
+
+                    if (!res.ok) throw new Error('API returned ' + res.status);
+
+                    var replyText = await res.text();
+                    removeTyping();
+                    addBotMessage(replyText);
+                    conversationHistory.push({ role: 'assistant', content: replyText });
+
+                } catch (err) {
+                    removeTyping();
+                    addBotMessage('Something went wrong. Please try again.');
+                    console.error('Epsilon AI error:', err);
+                }
+
+                isWaiting = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            /* ====== AUTO-REFRESH CONTEXT ======
+             * If the user creates/deletes collections or keys while the
+             * chat is open, the next message they send will automatically
+             * pick up the changes because buildSystemPrompt() reads the
+             * live variables every time.
+             * 
+             * We also reset the greeting flag on logout so a fresh
+             * greeting appears on next login.
+             */
+            var _origLogout = typeof handleLogout === 'function' ? handleLogout : null;
+            if (_origLogout) {
+                window.handleLogout = function () {
+                    hasGreeted = false;
+                    conversationHistory = [];
+                    _origLogout();
+                };
+            }
+
+        })();
+    </script>
     <script>
         var { createClient } = supabase;
         var supabaseClient = createClient('https://gfsqzkyviivhvyqadpeg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc3F6a3l2aWl2aHZ5cWFkcGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDI0NDQsImV4cCI6MjA4NjAxODQ0NH0.MwC6dMZKFZMyklCJKqr4DPek8dxR-EswBZSd1L_AkMA', { auth: { persistSession: true, storageKey: 'epsilon-db-auth', autoRefreshToken: true, detectSessionInUrl: true } });
@@ -2340,6 +3123,7 @@
         function formatJSON(o) { var j = JSON.stringify(o, null, 2); return j.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"([^"]+)":/g, '<span class="jk">"$1"</span>:').replace(/: "([^"]*)"/g, ': <span class="js">"$1"</span>').replace(/: (\d+\.?\d*)/g, ': <span class="jn">$1</span>').replace(/: (true|false)/g, ': <span class="jb">$1</span>').replace(/: (null)/g, ': <span class="jnull">$1</span>'); }
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
     </script>
+
 </body>
 
 </html>
